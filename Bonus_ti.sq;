@@ -1,0 +1,84 @@
+-- =====================================================
+-- SCRIPT COMPLETO PARA TESTAR PL/SQL
+-- Execute cada seção por vez no Oracle SQL Developer
+-- =====================================================
+
+
+-- ===== SEÇÃO 3: VERIFICAR DADOS INSERIDOS =====
+SELECT 'Total de funcionários: ' || COUNT(*) AS info FROM funcionarios
+UNION ALL
+SELECT 'Funcionários TI: ' || COUNT(*) FROM funcionarios WHERE departamento = 'TI'
+UNION ALL  
+SELECT 'Salários TI > 5000: ' || COUNT(*) FROM funcionarios WHERE departamento = 'TI' AND salario > 5000
+UNION ALL
+SELECT 'Salários TI <= 5000: ' || COUNT(*) FROM funcionarios WHERE departamento = 'TI' AND salario <= 5000;
+
+-- ===== SEÇÃO 4: VER FUNCIONÁRIOS TI ANTES DO BONUS =====
+SELECT nome, salario, bonus, departamento 
+FROM funcionarios 
+WHERE departamento = 'TI'
+ORDER BY salario;
+
+-- ===== SEÇÃO 5: CÓDIGO PL/SQL PARA CALCULAR BONUS =====
+--SET SERVEROUTPUT ON
+
+DECLARE
+    v_bonus NUMBER;
+    v_contador NUMBER := 0;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('=== CALCULANDO BONUS PARA FUNCIONÁRIOS TI ===');
+    
+    FOR funcionario IN (SELECT nome, salario FROM funcionarios WHERE departamento = 'TI') LOOP
+        
+        IF funcionario.salario > 5000 THEN
+            v_bonus := funcionario.salario * 0.1; -- 10% para salário > 5000
+            DBMS_OUTPUT.PUT_LINE(funcionario.nome || ' (R$ ' || funcionario.salario || ') -> Bonus 10%: R$ ' || v_bonus);
+        ELSE
+            v_bonus := funcionario.salario * 0.05; -- 5% para salário <= 5000  
+            DBMS_OUTPUT.PUT_LINE(funcionario.nome || ' (R$ ' || funcionario.salario || ') -> Bonus 5%: R$ ' || v_bonus);
+        END IF;
+        
+        UPDATE funcionarios 
+        SET bonus = v_bonus 
+        WHERE nome = funcionario.nome;
+        
+        v_contador := v_contador + 1;
+    END LOOP;
+    
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('=== PROCESSAMENTO CONCLUÍDO ===');
+    DBMS_OUTPUT.PUT_LINE('Total de funcionários processados: ' || v_contador);
+END;
+/
+
+-- ===== SEÇÃO 6: VERIFICAR RESULTADOS APÓS BONUS =====
+SELECT nome, salario, bonus, 
+       ROUND((bonus/salario)*100, 1) || '%' AS percentual_bonus,
+       departamento
+FROM funcionarios 
+WHERE departamento = 'TI'
+ORDER BY salario;
+
+-- ===== SEÇÃO 7: COMPARAÇÃO ANTES/DEPOIS (TODOS DEPARTAMENTOS) =====
+SELECT departamento,
+       COUNT(*) AS total_funcionarios,
+       ROUND(AVG(salario), 2) AS salario_medio,
+       ROUND(AVG(bonus), 2) AS bonus_medio,
+       SUM(bonus) AS total_bonus_pago
+FROM funcionarios
+GROUP BY departamento
+ORDER BY departamento;
+
+-- ===== DICAS DE EXECUÇÃO =====
+-- 1. Execute seção por seção (copie e cole cada parte)
+-- 2. Aguarde "Procedimento concluído" entre as seções
+-- 3. Verifique a aba "Saída do Script" para ver as mensagens
+-- 4. Os funcionários de TI terão bonus calculado automaticamente!
+
+
+
+/*SET SERVEROUTPUT ON
+
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('VAI APARECER');
+END; */
